@@ -23,4 +23,5 @@ Libraries:
 - #include <RtcDS1302.h>
 - #include <EEPROM.h>
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/zofWSsuGyS4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+https://user-images.githubusercontent.com/73587747/160590976-a1e4b383-2817-4338-9233-c5fb3b8100ef.mp4
