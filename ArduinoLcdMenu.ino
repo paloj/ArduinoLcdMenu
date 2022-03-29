@@ -186,8 +186,12 @@ void setup ()
 
 //-------BUTTON INTERRUPT CALLS THIS FUNCTION------------------------------------------
 volatile bool button_pressed = false;
+volatile bool allow_btn = true;
 void btn_update(){
-  button_pressed = true;
+  if (allow_btn){
+    button_pressed = true;
+    allow_btn = false;
+    }
   //Serial.println("Button pressed");
 }
 
@@ -217,6 +221,9 @@ void re_update(){
     }
   }
   if (re_counter>999 || re_counter<-999){re_counter=0;}
+
+  //Prevent button press staying true when rotating encoder 
+  button_pressed = false;
 }
 
 
@@ -1049,6 +1056,9 @@ void loop ()
   //SAVE ROTARY ENCODER POSITION
   re_cnt_prev = re_counter;
 
+  //If button was pressed allow another press on next loop
+  allow_btn = true;
+  
   //LOOP DELAY
   delay(200);
 }
