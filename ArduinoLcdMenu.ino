@@ -1,9 +1,9 @@
 
 //MULTIPLE ANALOG INPUT 4X-RELAY CONTROLLER WITH ROTARY ENCODER LCD MENU SYSTEM AND RTC MODULE
-//23-03-2022
-//V.0.1
+//28-03-2022
+//V.0.1.1
 //AUTHOR: JP
-//Licence: Nonfree
+//Licence: Free for non-commercial use
 //---------------------------------------------------------------
 
 #include <LiquidCrystal_I2C.h>
@@ -35,6 +35,7 @@ volatile int     re_btn = HIGH;
 //RTC settings
 ThreeWire myWire(4, 5, 2); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
+RtcDateTime rtcformat;
 
 //LCD settings
 // Set the LCD address to 0x27 for a 20 chars and 4 line display
@@ -133,6 +134,7 @@ void setup ()
   RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
   printDateTime(compiled);
   Serial.println();
+  rtcformat = compiled;
 
   if (!Rtc.IsDateTimeValid())
   {
@@ -534,7 +536,11 @@ void menu4(){
   
   //----------LCD STUFF---------
   //LINE 1
-  line1 = "--RT CLOCK DISPLAY--";
+  if(menu_row == 1 || menu_row == 3){
+    line1 = ">Exit  Change time";
+  }else{
+    line1 = " Exit >Change time";
+  }
   lcd.home(); //set cursor to 0,0
   lcd.print(line1);
   //LINE 2
@@ -552,12 +558,11 @@ void menu4(){
   if (count == 0){clearLCDLine(3);}
   
   lcd.setCursor(0, 3); //go to start of 4th line
-  if (count <= 2){
+  if (count <= 10){
     line4 = "Power on since:";  
   }
-  else if (2 < count && count <= 6){
+  else if (10 < count && count <= 21){
     line4 = start_date;
-    //line4 = "PAIVAMAARA 2022/02/02";
   }
   else{
     line4 = start_date;
@@ -565,7 +570,157 @@ void menu4(){
     }
   count++;
   lcd.print(line4);
-  delay(800);
+  //delay(800);
+}
+
+//----MENU 4.1 CHANGE DATE AND TIME----
+
+bool gotcurrent = 0;
+bool edit_mm, edit_dd, edit_yy, edit_hh, edit_mi, edit_ss; //variables for selection ids
+RtcDateTime DT_TMP;
+char dt_tmp_string[20];
+int mmi, ddi, yyi, hhi, mii, ssi; //integers for separate datetime values
+
+void menu4_1(){
+
+  //Read current dateime to tmp variable for editing
+  if(!gotcurrent){
+    DateTimeInts(Rtc.GetDateTime());
+    gotcurrent = true;
+    button_pressed = false;
+  }
+
+  CheckChanges(); //Check if editing number and encoder rotation
+  DateTimeTmp(); //Create temp string of datetime for LCD
+
+  //eê
+  line1 = "mm/dd/yyyy hh:mm:ss";
+  line2 = String(dt_tmp_string);
+
+  if(edit_mm || edit_dd || edit_yy || edit_hh || edit_mi || edit_ss){
+                             //mm/dd/yyyy hh:mm:ss
+    if(menu_row == 1){line3 = " e                  ";}
+    if(menu_row == 2){line3 = "    e               ";}
+    if(menu_row == 3){line3 = "         e          ";}
+    if(menu_row == 4){line3 = "            e       ";}
+    if(menu_row == 5){line3 = "               e    ";}
+    if(menu_row == 6){line3 = "                  e ";}
+    if(menu_row >  6){line3 = "                    ";}  
+    if(menu_row <  7){line4 = "    SAVE    EXIT  ";}
+    if(menu_row == 7){line4 = "   >SAVE<   EXIT  ";}
+    if(menu_row == 8){line4 = "    SAVE   >EXIT< ";}
+  } else {
+                             //mm/dd/yyyy hh:mm:ss
+    if(menu_row == 1){line3 = " ^                  ";}
+    if(menu_row == 2){line3 = "    ^               ";}
+    if(menu_row == 3){line3 = "         ^          ";}
+    if(menu_row == 4){line3 = "            ^       ";}
+    if(menu_row == 5){line3 = "               ^    ";}
+    if(menu_row == 6){line3 = "                  ^ ";}
+    if(menu_row >  6){line3 = "                    ";}  
+    if(menu_row <  7){line4 = "    SAVE    EXIT  ";}
+    if(menu_row == 7){line4 = "   >SAVE<   EXIT  ";}
+    if(menu_row == 8){line4 = "    SAVE   >EXIT< ";}
+  }
+  
+  lcd.setCursor(0, 0);
+  lcd.print(line1);
+
+  lcd.setCursor(0, 1);
+  lcd.print(line2);
+
+  lcd.setCursor(0, 2);
+  lcd.print(line3);
+
+  lcd.setCursor(0, 3);
+  lcd.print(line4);
+  
+}
+
+void CheckChanges(){
+  //MONTH If rotation when editing month(mmi) then add or substract from mmi
+  if (edit_mm && re_cnt_prev != re_counter){
+    if (re_cnt_prev < re_counter){
+      mmi++;
+    }else{
+      mmi--;
+    }
+    if (mmi < 1){mmi = 12;} //loop number back to 12 if under 1
+    if (mmi > 12){mmi = 1;} //loop number back to 1 if over 12
+  }
+  
+  //DAY If rotation when editing day(ddi) then add or substract from ddi
+  if (edit_dd && re_cnt_prev != re_counter){
+    if (re_cnt_prev < re_counter){
+      ddi++;
+    }else{
+      ddi--;
+    }
+    if (ddi < 1){ddi = 31;} //loop number back to 31 if under 1
+    if (ddi > 31){ddi = 1;} //loop number back to 1 if over 31
+  }
+
+  //YEAR If rotation when editing year(yyi) then add or substract from yyi
+  if (edit_yy && re_cnt_prev != re_counter){
+    if (re_cnt_prev < re_counter){
+      yyi++;
+    }else{
+      yyi--;
+    }
+    if (yyi < 2022){yyi = 5022;} //loop number back to 5022 if under 2022
+    if (yyi > 5022){yyi = 2022;} //loop number back to 2022 if over 5022
+  }
+
+  //HOURS If rotation when editing hour(hhi) then add or substract from hhi
+  if (edit_hh && re_cnt_prev != re_counter){
+    if (re_cnt_prev < re_counter){
+      hhi++;
+    }else{
+      hhi--;
+    }
+    if (hhi < 0){hhi = 24;} //loop number back to 24 if under 0
+    if (hhi > 24){hhi = 0;} //loop number back to 0 if over 24
+  }
+
+
+//MINUTES If rotation when editing minute(mii) then add or substract from mii
+  if (edit_mi && re_cnt_prev != re_counter){
+    if (re_cnt_prev < re_counter){
+      mii++;
+    }else{
+      mii--;
+    }
+    if (mii < 0){mii = 59;} //loop number back to 59 if under 0
+    if (mii > 59){mii = 0;} //loop number back to 0 if over 59
+  }
+
+  //SECONDS If rotation when editing seconds(ssi) then add or substract from ssi
+  if (edit_ss && re_cnt_prev != re_counter){
+    if (re_cnt_prev < re_counter){
+      ssi++;
+    }else{
+      ssi--;
+    }
+    if (ssi < 0){ssi = 59;} //loop number back to 59 if under 0
+    if (ssi > 59){ssi = 0;} //loop number back to 0 if over 59
+  }
+  
+}
+
+void SaveToRTC(){
+  RtcDateTime t = RtcDateTime(yyi, mmi, ddi, hhi, mii, ssi);
+  
+  lcd.clear();
+  lcd.setCursor(1, 1);
+  lcd.print("SAVING TIME TO RTC");
+
+  Rtc.SetDateTime(t);
+  
+  delay(500);
+  lcd.clear();
+  lcd.setCursor(1, 1);
+  lcd.print("TIME SAVED");
+  delay(500); 
 }
 
 //SAVE VALUES TO EEPROM PERSISTENT MEMORY
@@ -645,186 +800,242 @@ void loop ()
     firstloop = false;
   };
 
-  //+++++++ BUTTON PRESS MENU ACTIONS +++++++
+  //update LCD and button stuff only when not in powersave mode
+  if(!POWERSAVE){
+    
+    //+++++++ BUTTON PRESS MENU ACTIONS +++++++
+    
+    //IF BUTTON PRESSED ON MENU 1.3 ROW 1
+    if (button_pressed == true && menu_page == 1.3 && menu_row == 1 && m_1_3_editrow == 0){
+      menu_row_change_enabled = false;
+      m_1_3_editrow = 1;
+      button_pressed = false;
+    }
+    
+    //IF BUTTON PRESSED ON MENU 1.3 ROW 1 while m_1_3_editrow = 1
+    if (button_pressed == true && menu_page == 1.3 && menu_row == 1 && m_1_3_editrow == 1){
+      menu_row_change_enabled = true;
+      m_1_3_editrow = 0;
+      button_pressed = false;
+      clearLCDLine(0);
+    }
   
-  //IF BUTTON PRESSED ON MENU 1.3 ROW 1
-  if (button_pressed == true && menu_page == 1.3 && menu_row == 1 && m_1_3_editrow == 0){
-    menu_row_change_enabled = false;
-    m_1_3_editrow = 1;
-    button_pressed = false;
-  }
+    //IF BUTTON PRESSED ON MENU 1.3 ROW 2
+    if (button_pressed == true && menu_page == 1.3 && menu_row == 2 && m_1_3_editrow == 0){
+      menu_row_change_enabled = false;
+      m_1_3_editrow = 2;
+      button_pressed = false;
+    }
+    
+    //IF BUTTON PRESSED ON MENU 1.3 ROW 2 while m_1_3_editrow = 2
+    if (button_pressed == true && menu_page == 1.3 && menu_row == 2 && m_1_3_editrow == 2){
+      menu_row_change_enabled = true;
+      m_1_3_editrow = 0;
+      button_pressed = false;
+      clearLCDLine(0);
+    }
   
-  //IF BUTTON PRESSED ON MENU 1.3 ROW 1 while m_1_3_editrow = 1
-  if (button_pressed == true && menu_page == 1.3 && menu_row == 1 && m_1_3_editrow == 1){
-    menu_row_change_enabled = true;
-    m_1_3_editrow = 0;
-    button_pressed = false;
-    clearLCDLine(0);
-  }
+    //IF BUTTON PRESSED ON MENU 1.3 ROW 3 WRITE VALUE TO EEPROM TO ADDRESS ValNo*10
+    if (button_pressed == true && menu_page == 1.3 && menu_row == 3){
+      save_value(m_1_3_valNo*10 , m_1_3_Value);
+      button_pressed = false;
+    }
 
-  //IF BUTTON PRESSED ON MENU 1.3 ROW 2
-  if (button_pressed == true && menu_page == 1.3 && menu_row == 2 && m_1_3_editrow == 0){
-    menu_row_change_enabled = false;
-    m_1_3_editrow = 2;
-    button_pressed = false;
-  }
-  
-  //IF BUTTON PRESSED ON MENU 1.3 ROW 2 while m_1_3_editrow = 2
-  if (button_pressed == true && menu_page == 1.3 && menu_row == 2 && m_1_3_editrow == 2){
-    menu_row_change_enabled = true;
-    m_1_3_editrow = 0;
-    button_pressed = false;
-    clearLCDLine(0);
-  }
-
-  //IF BUTTON PRESSED ON MENU 1.3 ROW 3 WRITE VALUE TO EEPROM TO ADDRESS ValNo*10
-  if (button_pressed == true && menu_page == 1.3 && menu_row == 3){
-    save_value(m_1_3_valNo*10 , m_1_3_Value);
-    button_pressed = false;
-  }
-  
-  
-  //LOOP SELECTED MENU ROW POSITION IF ON MAIN OR MENU 1 IF ROTATION DETECTED
-  if (menu_page < 2 && re_cnt_prev != re_counter && menu_row_change_enabled == true) {
-    if (re_cnt_prev < re_counter){
-      if (menu_row < 4){
-        menu_row++;
-      }
-      else if (menu_row == 4){
-        menu_row = 1;
-      }
-    } else {
-      if (menu_row > 1){
-        menu_row--;
-      }
-      else if (menu_row == 1){
-        menu_row = 4;
+    //-------RTC EDIT MENU BUTTON PRESSES---------
+    rtc_edit_button_presses();
+    
+    
+    //LOOP SELECTED MENU ROW POSITION IF ON MAIN OR MENU 1 IF ROTATION DETECTED
+    if ((menu_page < 2 && re_cnt_prev != re_counter && menu_row_change_enabled == true) || (menu_page == 4 && re_cnt_prev != re_counter)) {
+      if (re_cnt_prev < re_counter){
+        if (menu_row < 4){
+          menu_row++;
+        }
+        else if (menu_row == 4){
+          menu_row = 1;
+        }
+      } else {
+        if (menu_row > 1){
+          menu_row--;
+        }
+        else if (menu_row == 1){
+          menu_row = 4;
+        }
       }
     }
-  }
 
-  //PRINT DEBUG INFO TO SERIAL MONITOR
-  if (re_cnt_prev != re_counter) {
-    serial_prints();
-  }
-
-  //RETURN FROM MENU 1 WITH BUTTON PRESS ON EXIT SELECTED
-  if (menu_page == 1 && menu_row == 4 && button_pressed == true) {
-    lcd.clear();
-    menu_page = 0;
-    menu_row = 1;
-    button_pressed=false;
-  }
-  //RETURN FROM MENU 1.1 TO MENU 1 WITH BUTTON PRESS
-  if (menu_page == 1.1 && button_pressed == true) {
-    lcd.clear();
-    menu_page = 1;
-    menu_row = 1;
-    button_pressed=false;
-  }
-  //RETURN FROM MENU 1.3 WITH BUTTON PRESS ON EXIT SELECTED
-  if (menu_page == 1.3 && menu_row == 4 && button_pressed == true) {
-    lcd.clear();
-    menu_page = 0;
-    menu_row = 1;
-    button_pressed=false;
-  }
-  //RETURN FROM MENU 2 WITH BUTTON PRESS
-  if (menu_page == 2 && button_pressed) {
-    lcd.clear();
-    menu_page = 0;
-    menu_row = 1;
-    button_pressed=false;
-  }
-  //RETURN FROM MENU 3 WITH BUTTON PRESS
-  if (menu_page == 3 && button_pressed) {
-    lcd.clear();
-    menu_page = 0;
-    menu_row = 1;
-    button_pressed=false;
-  }
-
-  //RETURN FROM RTC MENU WITH BUTTON PRESS
-  if (menu_page == 4 && button_pressed) {
-    lcd.clear();
-    menu_page = 0;
-    menu_row = 1;
-    button_pressed=false;
-  }
-
-  //SELECT MENU PAGE 1
-  if (menu_page == 0 && menu_row == 1 && button_pressed){
-    lcd.clear();
-    menu_page = 1;
-    menu_row = 1;
-    button_pressed=false;
-  }
-  if (menu_page == 1 && menu_row == 1 && button_pressed){
-    lcd.clear();
-    menu_page = 1.1;
-    menu_row = 1;
-    button_pressed=false;
-    refreshed = false;
-  }
-  if (menu_page == 1 && menu_row == 3 && button_pressed){
-    lcd.clear();
-    menu_page = 1.3;
-    menu_row = 1;
-    button_pressed=false;
-  }
+    //LOOP SELECTED MENU ROW POSITION IF ON RTC EDIT MENU
+    if (menu_page == 4.1 && re_cnt_prev != re_counter && menu_row_change_enabled == true) {
+      if (re_cnt_prev < re_counter){
+        if (menu_row < 8){
+          menu_row++;
+        }
+        else if (menu_row == 8){
+          menu_row = 1;
+        }
+      } else {
+        if (menu_row > 1){
+          menu_row--;
+        }
+        else if (menu_row == 1){
+          menu_row = 8;
+        }
+      }
+    }
   
-  if (menu_page == 0 && menu_row == 2 && button_pressed){
-    lcd.clear();
-    menu_page = 2;
-    menu_row = 1;
-    button_pressed=false;
-  }
-  if (menu_page == 0 && menu_row == 3 && button_pressed){
-    lcd.clear();
-    menu_page = 3;
-    menu_row = 1;
-    button_pressed=false;
-  }
+    //PRINT DEBUG INFO TO SERIAL MONITOR
+    if (re_cnt_prev != re_counter) {
+      serial_prints();
+    }
   
-  //SELECT RTC MENU PAGE
-  if (menu_page == 0 && menu_row == 4 && button_pressed){
-    lcd.clear();
-    menu_page = 4;
-    menu_row = 1;
-    button_pressed=false;
-  }
+    //RETURN FROM MENU 1 WITH BUTTON PRESS ON EXIT SELECTED
+    if (menu_page == 1 && menu_row == 4 && button_pressed == true) {
+      lcd.clear();
+      menu_page = 0;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    //RETURN FROM MENU 1.1 TO MENU 1 WITH BUTTON PRESS
+    if (menu_page == 1.1 && button_pressed == true) {
+      lcd.clear();
+      menu_page = 1;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    //RETURN FROM MENU 1.3 WITH BUTTON PRESS ON EXIT SELECTED
+    if (menu_page == 1.3 && menu_row == 4 && button_pressed == true) {
+      lcd.clear();
+      menu_page = 0;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    //RETURN FROM MENU 2 WITH BUTTON PRESS
+    if (menu_page == 2 && button_pressed) {
+      lcd.clear();
+      menu_page = 0;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    //RETURN FROM MENU 3 WITH BUTTON PRESS
+    if (menu_page == 3 && button_pressed) {
+      lcd.clear();
+      menu_page = 0;
+      menu_row = 1;
+      button_pressed=false;
+    }
   
-  //+++++++ PAGE DISPLAY +++++++
+    //RETURN FROM RTC MENU WITH BUTTON PRESS
+    if (menu_page == 4 && (menu_row == 1 || menu_row == 3) && button_pressed) {
+      lcd.clear();
+      menu_page = 0;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    //SAVE AND RETURN FROM RTC EDIT MENU WITH BUTTON PRESS
+    if (menu_page == 4.1 && menu_row == 7 && button_pressed) {
+      SaveToRTC();
+      menu_page = 0;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    //RETURN FROM RTC EDIT MENU WITH BUTTON PRESS
+    if (menu_page == 4.1 && menu_row == 8 && button_pressed) {
+      lcd.clear();
+      menu_page = 0;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    
   
-  //MAIN MENU
-  if (menu_page == 0){
-    menu0();
-  }
+    //SELECT MENU PAGE 1
+    if (menu_page == 0 && menu_row == 1 && button_pressed){
+      lcd.clear();
+      menu_page = 1;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    if (menu_page == 1 && menu_row == 1 && button_pressed){
+      lcd.clear();
+      menu_page = 1.1;
+      menu_row = 1;
+      button_pressed=false;
+      refreshed = false;
+    }
+    if (menu_page == 1 && menu_row == 3 && button_pressed){
+      lcd.clear();
+      menu_page = 1.3;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    
+    if (menu_page == 0 && menu_row == 2 && button_pressed){
+      lcd.clear();
+      menu_page = 2;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    if (menu_page == 0 && menu_row == 3 && button_pressed){
+      lcd.clear();
+      menu_page = 3;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    
+    //SELECT RTC MENU PAGE
+    if (menu_page == 0 && menu_row == 4 && button_pressed){
+      lcd.clear();
+      menu_page = 4;
+      menu_row = 1;
+      button_pressed=false;
+    }
+    //SELECT EDIT RTC MENU PAGE
+    if (menu_page == 4 && (menu_row == 2 || menu_row == 4) && button_pressed){
+      lcd.clear();
+      menu_page = 4.1;
+      menu_row = 1;
+      button_pressed=false;
+      gotcurrent = false;
+    }
+    
+    //+++++++ PAGE DISPLAY +++++++
 
-  //MENU PAGE 1
-  if (menu_page == 1){
-    menu1();
-  }
-  if (menu_page == 1.1){
-    menu1_1();
-  }
-   if (menu_page == 1.3){
-    menu1_3();
-  }
+    
+    //MAIN MENU
+    if (menu_page == 0){
+      menu0();
+    }
+  
+    //MENU PAGE 1
+    if (menu_page == 1){
+      menu1();
+    }
+    if (menu_page == 1.1){
+      menu1_1();
+    }
+     if (menu_page == 1.3){
+      menu1_3();
+    }
+  
+    //MENU PAGE 2
+    if (menu_page == 2){
+      menu2();
+    }
+  
+    //MENU PAGE 3
+    if (menu_page == 3){
+      menu3();
+    }
+  
+    //RT CLOCK DISPLAY MENU
+    if (menu_page == 4){
+      menu4();
+    }
+    
+    //EDIT RT CLOCK DATE AND TIME MENU
+    if (menu_page == 4.1){
+      menu4_1();
+    }
 
-  //MENU PAGE 2
-  if (menu_page == 2){
-    menu2();
-  }
-
-  //MENU PAGE 3
-  if (menu_page == 3){
-    menu3();
-  }
-
-  //RT CLOCK DISPLAY MENU
-  if (menu_page == 4){
-    menu4();
   }
 
   //CHANGE RELAY STATUSES IF NECESSARY
@@ -841,6 +1052,82 @@ void loop ()
   delay(200);
 }
 //----------------------------LOOP END-------------------------------
+
+void rtc_edit_button_presses(){
+  
+  //IF BUTTON PRESSED ON MENU 4.1 ROW 1 ALLOW MONTH EDIT
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 1 && menu_row_change_enabled == true){
+      menu_row_change_enabled = false;
+      edit_mm = true;
+      button_pressed = false;
+    }
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 1 && edit_mm == true){
+      menu_row_change_enabled = true;
+      edit_mm = false;
+      button_pressed = false;
+    }
+
+    //IF BUTTON PRESSED ON MENU 4.1 ROW 2 ALLOW DAY EDIT
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 2 && menu_row_change_enabled == true){
+      menu_row_change_enabled = false;
+      edit_dd = true;
+      button_pressed = false;
+    }
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 2 && edit_dd == true){
+      menu_row_change_enabled = true;
+      edit_dd = false;
+      button_pressed = false;
+    }
+
+    //IF BUTTON PRESSED ON MENU 4.1 ROW 3 ALLOW YEAR EDIT
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 3 && menu_row_change_enabled == true){
+      menu_row_change_enabled = false;
+      edit_yy = true;
+      button_pressed = false;
+    }
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 3 && edit_yy == true){
+      menu_row_change_enabled = true;
+      edit_yy = false;
+      button_pressed = false;
+    }
+
+    //IF BUTTON PRESSED ON MENU 4.1 ROW 4 ALLOW HOUR EDIT
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 4 && menu_row_change_enabled == true){
+      menu_row_change_enabled = false;
+      edit_hh = true;
+      button_pressed = false;
+    }
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 4 && edit_hh == true){
+      menu_row_change_enabled = true;
+      edit_hh = false;
+      button_pressed = false;
+    }
+
+    //IF BUTTON PRESSED ON MENU 4.1 ROW 5 ALLOW MINUTES EDIT
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 5 && menu_row_change_enabled == true){
+      menu_row_change_enabled = false;
+      edit_mi = true;
+      button_pressed = false;
+    }
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 5 && edit_mi == true){
+      menu_row_change_enabled = true;
+      edit_mi = false;
+      button_pressed = false;
+    }
+
+    //IF BUTTON PRESSED ON MENU 4.1 ROW 6 ALLOW SECONDS EDIT
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 6 && menu_row_change_enabled == true){
+      menu_row_change_enabled = false;
+      edit_ss = true;
+      button_pressed = false;
+    }
+    if (button_pressed == true && menu_page == 4.1 && menu_row == 6 && edit_ss == true){
+      menu_row_change_enabled = true;
+      edit_ss = false;
+      button_pressed = false;
+    }
+  
+}
 
 //-------READ ANALOG INPUT SENSORS-------------------------
 void READ_ANALOG_SENSORS(){
@@ -946,6 +1233,30 @@ void printhhmm(const RtcDateTime& dt)
   //Serial.print(datestring);
   timehhmm = timestring;
 }
+
+//Datestring part updates and temp string for editing
+void DateTimeInts(const RtcDateTime& dt)
+{
+  mmi = dt.Month();
+  ddi = dt.Day();
+  yyi = dt.Year();
+  hhi = dt.Hour();
+  mii = dt.Minute();
+  ssi = dt.Second();
+}
+void DateTimeTmp()
+{
+  snprintf_P(dt_tmp_string,
+             countof(dt_tmp_string),
+             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+             mmi,
+             ddi,
+             yyi,
+             hhi,
+             mii,
+             ssi );
+}
+
 
 //------------read temperature from arduino internal chip sensor (arduino nano every. Ei toimi megalla!)---------------------
 int getTemperature(void) {
