@@ -162,8 +162,9 @@ void setup ()
   if (now < compiled)
   {
     Serial.println("RTC is older than compile time!  (Updating DateTime)");
-    //UNCOMMENT THIS TO WRITE NEW TIME TO RTC MODULE
-    Rtc.SetDateTime(compiled);
+    
+    //COMMENT OR UNCOMMENT LINE BELOW TO WRITE OR NOT TO WRITE NEW TIME TO RTC MODULE ON UPLOAD
+    //Rtc.SetDateTime(compiled);
   }
   else if (now > compiled)
   {
@@ -187,7 +188,7 @@ void setup ()
 volatile bool button_pressed = false;
 void btn_update(){
   button_pressed = true;
-  Serial.println("Button pressed");
+  //Serial.println("Button pressed");
 }
 
 //-------ROTARY ENCODER INTERRUPT CALLS THIS FUNCTION WHEN IT HAS BEEN TURNED----------
@@ -783,7 +784,7 @@ void loop ()
   READ_ANALOG_SENSORS();
   
   //IF BUTTON PRESSED DELAY TO AVOID DOUPLE PRESSES
-  if (button_pressed){delay(50);}
+  if (button_pressed){delay(100);}
   
   //POWERSAVE ON WHEN NO ACTION (LCD BACKLIGHT OFF)
   powersave();
