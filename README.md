@@ -1,5 +1,5 @@
 # ArduinoLcdMenu
- LCD menu system for rotary encoder and relay control. All menus, functions and settings are accessible with rotating the encoder and pushing a button.
+ LCD menu system for Arduino, rotary encoder and relay control. All menus, functions and settings are accessible with rotating the encoder and pushing a button.
  
  - Main menu
  - 1.Value Ctrl menu -> persistent values to guide relay ctrl limits
