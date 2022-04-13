@@ -23,5 +23,7 @@ Libraries:
 - #include <RtcDS1302.h>
 - #include <EEPROM.h>
 
+Wiring sample:
+- https://www.circuito.io/static/reply/index.html?solutionId=6256cf204a14a90030585d2d&solutionPath=storage.circuito.io
 
 https://user-images.githubusercontent.com/73587747/160590976-a1e4b383-2817-4338-9233-c5fb3b8100ef.mp4
