@@ -6,8 +6,6 @@
 //---------------------------------------------------------------
 
 #include <LiquidCrystal_I2C.h>
-//#include <ThreeWire.h>
-//#include <RtcDS1302.h>
 #include <DS3231.h>
 #include <Wire.h>
 #include <EEPROM.h>
@@ -35,9 +33,6 @@ volatile int     re_btn = HIGH;
 
 //----------------------------------------------------------------------------------------------
 //RTC settings
-//ThreeWire myWire(4, 5, 2); // IO, SCLK, CE
-//DS3231<ThreeWire> Rtc(myWire);
-//RtcDateTime rtcformat;
 
 DS3231 myRTC;
 
@@ -1237,6 +1232,7 @@ void READ_ANALOG_SENSORS() {
 
 
 //-------RELAY CTRL----------------------------------------
+//MODIFY RELAY CTRL FUNCTIONS ACCORDING TO YOUR NEEDS
 void RELAY_1() {
   if (SENS_0_VALUE > set0) {
     REL_1_ON = true;
@@ -1349,19 +1345,12 @@ void printDateTime()
   snprintf_P(datestring,
              countof(datestring),
              PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
-             //dt.Month(),
              myRTC.getMonth(century),
-             //dt.Day(),
              myRTC.getDate(),
-             //dt.Year(),
              myRTC.getYear()+2000,
-             //dt.Hour(),
              myRTC.getHour(h12Flag, pmFlag),
-             //dt.Minute(),
              myRTC.getMinute(),
-             //dt.Second() );
              myRTC.getSecond());
-  //Serial.print(datestring);
   datetime = datestring;
 }
 
@@ -1373,11 +1362,8 @@ void printhhmm()
   snprintf_P(timestring,
              countof(timestring),
              PSTR("%02u:%02u"),
-             //dt.Hour(),
              myRTC.getHour(h12Flag, pmFlag),
-             //dt.Minute());
              myRTC.getMinute());
-  //Serial.print(datestring);
   timehhmm = timestring;
 }
 
@@ -1385,17 +1371,11 @@ void printhhmm()
 //void DateTimeInts(const RtcDateTime& dt)
 void DateTimeInts()
 {
-  //mmi = dt.Month();
   mmi = myRTC.getMonth(century);
-  //ddi = dt.Day();
   ddi = myRTC.getDate();
-  //yyi = dt.Year();
   yyi = myRTC.getYear() + 2000;
-  //hhi = dt.Hour();
   hhi = myRTC.getHour(h12Flag, pmFlag);
-  //mii = dt.Minute();
   mii = myRTC.getMinute();
-  //ssi = dt.Second();
   ssi = myRTC.getSecond();
 }
 void DateTimeTmp()
