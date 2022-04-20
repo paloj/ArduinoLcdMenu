@@ -1,6 +1,6 @@
 //MULTIPLE ANALOG INPUT 4X-RELAY CONTROLLER WITH ROTARY ENCODER LCD MENU SYSTEM AND RTC MODULE
-//28-03-2022
-//V.0.1.1
+//19-04-2022
+//V.0.1.2
 //AUTHOR: JP
 //Licence: Free for non-commercial use
 //---------------------------------------------------------------
@@ -56,7 +56,7 @@ bool firstloop = true;
 
 //GLOBAL MENU VARIABLES
 float menu_page = 0;
-int   menu_row  = 1;
+float menu_row  = 1.0;
 bool  menu_page_change_enabled = true;
 bool  menu_row_change_enabled = true;
 bool  POWERSAVE = false;
@@ -276,7 +276,7 @@ void menu1() {
 
   //Menu item names
   menu1_name = "View stored values "; // menu 1.1
-  menu2_name = "Zero all values ";    // menu 1.2
+  menu2_name = "Name values ";        // menu 1.2
   menu3_name = "Change values ";      // menu 1.3
   menu4_name = "Exit ";
 
@@ -372,7 +372,8 @@ void menu1_1() {
 //---------- 1.3 EDIT VALUES VALUES MENU------------
 int m_1_3_valNo = 0;
 int m_1_3_Value;
-int m_1_3_editrow = 0;
+int m_1_3_Valuedec;
+float m_1_3_editrow = 0;
 bool m_1_3_init = false;
 
 void menu1_3() {
@@ -408,40 +409,74 @@ void menu1_3() {
     }
   }
 
+  //If rotation when editing Value DECIMALS add or substract from Valuedec
+  if (m_1_3_editrow == 2.1 && re_cnt_prev != re_counter) {
+    if (re_cnt_prev < re_counter) {
+      m_1_3_Valuedec = m_1_3_Valuedec + (re_counter - re_cnt_prev);
+    } else {
+      m_1_3_Valuedec = m_1_3_Valuedec - (re_cnt_prev - re_counter);
+    }
+    if (m_1_3_Valuedec < 0) {
+      m_1_3_Valuedec = 99; //loop back to 99 if less than 0
+    }
+    if (m_1_3_Valuedec > 99) {
+      m_1_3_Valuedec = 0; //loop back to 0 if over 99
+    }
+  }
+
   //Read Value from EEPROM values based on selected valNo
   if (m_1_3_init == false) {
     if (m_1_3_valNo == 0) {
       m_1_3_Value = set0;
+      m_1_3_Valuedec = abs((set0 - int(set0))*100); //Read decimal values to integer for easy editing
     }
     if (m_1_3_valNo == 1) {
       m_1_3_Value = set1;
+      m_1_3_Valuedec = abs((set1 - int(set1))*100);
     }
     if (m_1_3_valNo == 2) {
       m_1_3_Value = set2;
+      m_1_3_Valuedec = abs((set2 - int(set2))*100);
     }
     if (m_1_3_valNo == 3) {
       m_1_3_Value = set3;
+      m_1_3_Valuedec = abs((set3 - int(set3))*100);
     }
     if (m_1_3_valNo == 4) {
       m_1_3_Value = set4;
+      m_1_3_Valuedec = abs((set4 - int(set4))*100);
     }
     if (m_1_3_valNo == 5) {
       m_1_3_Value = set5;
+      m_1_3_Valuedec = abs((set5 - int(set5))*100);
     }
     if (m_1_3_valNo == 6) {
       m_1_3_Value = set6;
+      m_1_3_Valuedec = abs((set6 - int(set6))*100);
     }
     if (m_1_3_valNo == 7) {
       m_1_3_Value = set7;
+      m_1_3_Valuedec = abs((set7 - int(set7))*100);
     }
     if (m_1_3_valNo == 8) {
       m_1_3_Value = set8;
+      m_1_3_Valuedec = abs((set8 - int(set8))*100);
     }
     if (m_1_3_valNo == 9) {
       m_1_3_Value = set9;
+      m_1_3_Valuedec = abs((set9 - int(set9))*100);
     }
     m_1_3_init = true;
   }
+
+  //String type decimals with leading zero
+  String decs;
+  if (m_1_3_Valuedec < 10){
+    decs = "0";
+    decs += m_1_3_Valuedec;
+  }
+  else {decs = m_1_3_Valuedec;}
+  
 
   //Menu item names
   menu1_name = "ValNo ";
@@ -449,37 +484,56 @@ void menu1_3() {
   menu3_name = "SAVE";
   menu4_name = "Exit ";
 
+  // Edit or Select value No
   if (menu_row == 1) {
     if (m_1_3_editrow == 1) {
       line1 = ad_ + menu1_name + m_1_3_valNo + "<  "; //WHEN EDITING ROW 1
     }
     else {
-      line1 = sel + menu1_name + m_1_3_valNo + "  "; //WHEN NOT EDITING ROW 1
+      line1 = sel + menu1_name + m_1_3_valNo + "    "; //WHEN NOT EDITING ROW 1
     }
-    line2 = ad_ + menu2_name + m_1_3_Value + "  ";
+    line2 = ad_ + menu2_name + m_1_3_Value + "." + decs; + "    ";
     line3 = ad_ + menu3_name;
     line4 = ad_ + menu4_name;
   }
+  // Edit value integers prints
   else if (menu_row == 2) {
     line1 = ad_ + menu1_name + m_1_3_valNo;
     if (m_1_3_editrow == 2) {
-      line2 = ad_ + menu2_name + m_1_3_Value + "<  "; //WHEN EDITING ROW 2
+      line2 = ad_ + menu2_name + m_1_3_Value + "<" + decs + "  "; //WHEN EDITING ROW 2
+    }
+    else if (m_1_3_editrow == 2.1) {
+      line2 = ad_ + menu2_name + m_1_3_Value + "." + decs + "<  "; //WHEN EDITING ROW 2.1
     }
     else {
-      line2 = sel + menu2_name + m_1_3_Value + "  "; //WHEN NOT EDITING ROW 1
+      line2 = sel + menu2_name + m_1_3_Value + "." + decs + "  "; //WHEN NOT EDITING ROW 2
     }
     line3 = ad_ + menu3_name;
     line4 = ad_ + menu4_name;
   }
+
+  // Edit value decimals prints
+  else if (menu_row == 2) {
+    line1 = ad_ + menu1_name + m_1_3_valNo;
+    if (m_1_3_editrow == 2.1) {
+      line2 = ad_ + menu2_name + m_1_3_Value + "." + decs + "  "; //WHEN EDITING ROW 2.1
+    }
+    else {
+      line2 = sel + menu2_name + m_1_3_Value + decs + "  "; //WHEN NOT EDITING ROW 2.1
+    }
+    line3 = ad_ + menu3_name;
+    line4 = ad_ + menu4_name;
+  }
+  
   else if (menu_row == 3) {
     line1 = ad_ + menu1_name + m_1_3_valNo;
-    line2 = ad_ + menu2_name + m_1_3_Value;
+    line2 = ad_ + menu2_name + m_1_3_Value + "." + decs + "  ";
     line3 = sel + menu3_name;
     line4 = ad_ + menu4_name;
   }
   else if (menu_row == 4) {
     line1 = ad_ + menu1_name + m_1_3_valNo;
-    line2 = ad_ + menu2_name + m_1_3_Value;
+    line2 = ad_ + menu2_name + m_1_3_Value + "." + decs + "  ";
     line3 = ad_ + menu3_name;
     line4 = sel + menu4_name;
   }
@@ -917,6 +971,14 @@ void loop ()
 
     //IF BUTTON PRESSED ON MENU 1.3 ROW 2 while m_1_3_editrow = 2
     if (button_pressed == true && menu_page == 1.3 && menu_row == 2 && m_1_3_editrow == 2) {
+      menu_row_change_enabled = false;
+      m_1_3_editrow = 2.1;
+      button_pressed = false;
+      //clearLCDLine(0);
+    }
+
+    //IF BUTTON PRESSED ON MENU 1.3 ROW 2 while m_1_3_editrow = 2.1
+    if (button_pressed == true && menu_page == 1.3 && menu_row == 2 && m_1_3_editrow == 2.1) {
       menu_row_change_enabled = true;
       m_1_3_editrow = 0;
       button_pressed = false;
@@ -925,7 +987,11 @@ void loop ()
 
     //IF BUTTON PRESSED ON MENU 1.3 ROW 3 WRITE VALUE TO EEPROM TO ADDRESS ValNo*10
     if (button_pressed == true && menu_page == 1.3 && menu_row == 3) {
-      save_value(m_1_3_valNo * 10 , m_1_3_Value);
+      float decvalue = float(m_1_3_Value);
+      if (decvalue < 0){decvalue = decvalue - (float(m_1_3_Valuedec)/float(100));} //if negative value then substract decimals
+      else {decvalue = decvalue + (float(m_1_3_Valuedec)/float(100));} //if positive then add decimals
+      Serial.println(decvalue);
+      save_value(m_1_3_valNo * 10 , decvalue); //save combined value+valuedec to eeprom
       button_pressed = false;
     }
 
